@@ -1,0 +1,49 @@
+<joblist>  
+  <job> 
+    <name>stop</name>  
+    <description>stop the simple app</description>  
+    <loglevel>INFO</loglevel>  
+    <group>simpleapp</group>  
+    <context> 
+      <project>examples</project>  
+      <options> 
+        <option name="catalinahome" enforcedvalues="false" required="true" 
+       values="/var/rundeck/simpleapp/apache-tomcat" 
+       description="the tomcat install directory"/> 
+      </options> 
+    </context>  
+    <sequence threadcount="1" keepgoing="false" strategy="node-first"> 
+      <command> 
+        <script><![CDATA[#!/bin/bash
+# File: stop.sh <catalina-home>
+die() { echo "ERROR: $@" ; exit 1 ; }
+[ $# = 1 ] || { die "Usage: stop.sh <catalina-home>" ; }
+
+export CATALINA_HOME=$1
+export PORT=28080
+
+[ ! -d "$1" ] && {  echo "CATALINA_HOME not found: $1" ; }
+
+export CATALINA_BASE=$CATALINA_HOME;
+netstat -an|grep ${PORT}|grep -q LISTEN && {
+    echo "Tomcat listening (port=$PORT). Running stop script ..."
+    $CATALINA_HOME/bin/shutdown.sh || die "Script failed: stop.sh"
+    exit $?
+} 
+echo "Tomcat stopped"
+exit 0
+]]></script>  
+        <scriptargs>${option.catalinahome}</scriptargs> 
+      </command> 
+    </sequence>  
+    <nodefilters excludeprecedence="true"> 
+      <include> 
+        <tags>simple</tags> 
+      </include> 
+    </nodefilters>  
+    <dispatch> 
+      <threadcount>1</threadcount>  
+      <keepgoing>false</keepgoing> 
+    </dispatch> 
+  </job> 
+</joblist>

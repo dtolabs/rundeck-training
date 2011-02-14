@@ -1,0 +1,90 @@
+<joblist> 
+  <job> 
+    <name>install</name>  
+    <description>installs the simple app server and war</description>  
+    <loglevel>INFO</loglevel>  
+    <group>simpleapp</group>  
+    <context> 
+      <project>examples</project>  
+      <options> 
+        <option name="catalinahome" enforcedvalues="false" required="true" 
+         values="/var/rundeck/simpleapp/apache-tomcat" 
+         description="the tomcat install directory"/>  
+        <option name="simple" enforcedvalues="false" required="true" 
+         valuesUrl="file:/var/rundeck/simpleapp/simple.json" 
+         description="the simple war url"/>  
+        <option name="tomcat" enforcedvalues="false" required="true" 
+          valuesUrl="file:/var/rundeck/simpleapp/tomcat.json" 
+          description="tomcat zip url"/> 
+      </options> 
+    </context>  
+    <sequence threadcount="1" keepgoing="false" strategy="node-first"> 
+      <command> 
+        <script><![CDATA[#!/bin/bash
+# File: install.sh 
+USAGE="$0 <catalinahome> <tomcat-pkg-url> <simple-pkg-url>"
+
+die() { echo "ERROR: $@" ; exit 1 ; }
+[ $# = 3 ] || { die "$USAGE" ; }
+
+CATALINA_HOME=$1; 
+TOMCAT_PKG_URL=$2;
+SIMPLE_PKG_URL=$3;
+
+catalina_parentdir=`dirname $CATALINA_HOME`  ;# parent dir
+mkdir -p $catalina_parentdir || {die "failed creating dir: ${catalina_parentdir}"}
+tomcat_filename=${TOMCAT_PKG_URL##*/} ;# parse file names
+tomcat_base=${tomcat_filename%.zip}   ;#
+simple_filename=${SIMPLE_PKG_URL##*/} ;#
+simple_base=${simple_filename%-*}     ;#
+
+[ -d ${CATALINA_HOME} ] && {
+    rm -r ${CATALINA_HOME} || die "failed cleaning existing tomcat deployment"
+}
+
+fetch() {
+    srcurl=$1; dstpath=$2; overwrite=$3
+    curl -s -S  ${srcurl} -o ${dstpath} || die "Download failed: ${srcurl}"
+    echo "Downloaded ${srcurl}" 
+} 
+
+# retrieve the ZIP
+fetch  ${TOMCAT_PKG_URL}  $catalina_parentdir/${tomcat_filename}
+
+# extract the ZIP
+unzip -q $catalina_parentdir/${tomcat_filename} -d $catalina_parentdir || {
+  die "Extract failed: $catalina_parentdir/${tomcat_filename}"
+}
+
+# move the extracted dir to the catalina_home basename
+mv $catalina_parentdir/${tomcat_base} ${CATALINA_HOME} || die "failed to create ${CATALINA_HOME}"
+echo "Extracted ${tomcat_filename} to $CATALINA_HOME"
+
+# retrieve the WAR
+fetch ${SIMPLE_PKG_URL} $catalina_parentdir/${simple_filename}
+
+# extract the WAR
+mkdir -p ${CATALINA_HOME}/webapps/${simple_base} || {
+    die "failed making subdirectory directory: ${simple_base}"
+}
+unzip -q $catalina_parentdir/${simple_filename} -d ${CATALINA_HOME}/webapps/${simple_base} || {
+    die "Extract failed: $catalina_parentdir/$simple_filename"
+}
+echo "extracted ${simple_filename} to ${CATALINA_HOME}/webapps/${simple_base}"
+
+echo "install done"
+]]></script>  
+        <scriptargs>${option.catalinahome} ${option.tomcat} ${option.simple}</scriptargs> 
+      </command> 
+    </sequence>  
+    <nodefilters excludeprecedence="true"> 
+      <include> 
+        <tags>simple</tags> 
+      </include> 
+    </nodefilters>  
+    <dispatch> 
+      <threadcount>1</threadcount>  
+      <keepgoing>false</keepgoing> 
+    </dispatch> 
+  </job>  
+</joblist>   

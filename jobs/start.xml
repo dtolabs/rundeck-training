@@ -1,0 +1,42 @@
+<joblist> 
+  <job> 
+    <name>start</name>  
+    <description>start the simple app</description>  
+    <loglevel>INFO</loglevel>  
+    <group>simpleapp</group>  
+    <context> 
+      <project>examples</project>  
+      <options> 
+        <option name="catalinahome" enforcedvalues="false" required="true" 
+       values="/var/rundeck/simpleapp/apache-tomcat" 
+       description="the tomcat install directory"/> 
+      </options> 
+    </context>  
+    <sequence threadcount="1" keepgoing="false" strategy="node-first"> 
+      <command> 
+        <script><![CDATA[#!/bin/bash
+# File: start.sh
+USAGE="$0 <catalinahome>"
+die() { echo "ERROR: $@" ; exit 1 ; }
+[ $# = 1 ] || { die "Usage: start.sh <catalinahome>" ; }
+export CATALINA_HOME=$1
+[ -d "$CATALINA_HOME" ] || { die "CATALINA_HOME not found: $CATALINA_HOME" ; }
+
+export CATALINA_BASE=$CATALINA_HOME;
+echo "Invoking $CATALINA_HOME/bin/startup.sh"
+$CATALINA_HOME/bin/startup.sh;
+exit $?]]></script>  
+        <scriptargs>${option.catalinahome}</scriptargs> 
+      </command> 
+    </sequence>  
+    <nodefilters excludeprecedence="true"> 
+      <include> 
+        <tags>simple</tags> 
+      </include> 
+    </nodefilters>  
+    <dispatch> 
+      <threadcount>1</threadcount>  
+      <keepgoing>false</keepgoing> 
+    </dispatch> 
+  </job>  
+</joblist>

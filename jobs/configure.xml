@@ -1,0 +1,53 @@
+<joblist> 
+  <job> 
+    <name>configure</name>  
+    <description>configure the simple app</description>  
+    <loglevel>INFO</loglevel>  
+    <group>simpleapp</group>  
+    <context> 
+      <project>examples</project>  
+      <options> 
+        <option name="catalinahome" enforcedvalues="false" required="true" 
+          description="the tomcat install directory"/> 
+      </options> 
+    </context>  
+    <sequence threadcount="1" keepgoing="false" strategy="node-first"> 
+      <command> 
+        <script><![CDATA[#!/bin/sh
+# File: configure.sh
+USAGE="$0 configure.sh <catalina-home>"
+die() { echo "ERROR: $@" ; exit 1 ; }
+[ $# = 1 ] || { die "$USAGE" ; }
+
+CATALINA_HOME=$1
+
+[ -d "$CATALINA_HOME" ] || { die "CATALINA_HOME not found: $1" ; }
+
+echo "Chmod'ing files in $CATALINA_HOME/bin/*.sh"
+chmod +x $CATALINA_HOME/bin/*.sh || die "chmod step failed"
+
+echo "Customizing $CATALINA_HOME/conf/server.xml ..."
+server_xml_tmp=/tmp/server.xml.$$ ;# define a temporary file
+
+sed -e 's/8080/28080/g' -e 's/8005/28005/g' \
+    -e 's/8009/28009/g' $CATALINA_HOME/conf/server.xml > ${server_xml_tmp}
+mv ${server_xml_tmp} $CATALINA_HOME/conf/server.xml || {
+    die "Text replace failed: $CATALINA_HOME/conf/server.xml"
+}
+
+echo "$CATALINA_HOME/conf/server.xml customized"
+]]></script>  
+        <scriptargs>${option.catalinahome}</scriptargs> 
+      </command> 
+    </sequence>  
+    <nodefilters excludeprecedence="true"> 
+      <include> 
+        <tags>simple</tags> 
+      </include> 
+    </nodefilters>  
+    <dispatch> 
+      <threadcount>1</threadcount>  
+      <keepgoing>false</keepgoing> 
+    </dispatch> 
+  </job>  
+</joblist>  

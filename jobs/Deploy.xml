@@ -1,0 +1,45 @@
+<joblist> 
+  <job> 
+    <name>Deploy</name>  
+    <description>deploy the simple app</description>  
+    <loglevel>INFO</loglevel>  
+    <group>simpleapp</group>  
+    <context> 
+      <project>examples</project>  
+      <options> 
+        <option name="catalinahome" enforcedvalues="true" required="true" 
+          values="/var/rundeck/simpleapp/apache-tomcat" description="the tomcat install directory"/>  
+        <option name="simple" enforcedvalues="true" required="true" 
+          valuesUrl="http://localhost/simpleapp/simple.json" description="the simple war"/>  
+        <option name="tomcat" enforcedvalues="true" required="true" 
+          valuesUrl="http://localhost/simpleapp/tomcat.json" description="tomcat zip"/> 
+      </options> 
+    </context>  
+    <sequence threadcount="1" keepgoing="false" strategy="node-first"> 
+      <command> 
+        <jobref name="stop" group="simpleapp"> 
+          <arg line="-catalinahome ${option.catalinahome}"/> 
+        </jobref> 
+      </command>  
+      <command> 
+        <jobref name="install" group="simpleapp"> 
+          <arg line="-catalinahome ${option.catalinahome} -simple ${option.simple} -tomcat ${option.tomcat}"/> 
+        </jobref> 
+      </command>  
+      <command> 
+        <jobref name="configure" group="simpleapp"> 
+          <arg line="-catalinahome ${option.catalinahome}"/> 
+        </jobref> 
+      </command>  
+      <command> 
+        <jobref name="start" group="simpleapp"> 
+          <arg line="-catalinahome ${option.catalinahome}"/> 
+        </jobref> 
+      </command> 
+    </sequence>  
+    <dispatch> 
+      <threadcount>1</threadcount>  
+      <keepgoing>false</keepgoing> 
+    </dispatch> 
+  </job>  
+</joblist> 
